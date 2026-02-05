@@ -10,7 +10,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
 
   return (
     <PrivyProvider
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
+      appId="cmjqw9gh400hbie0cfrt7zobl"
       config={{
         loginMethods: ["wallet", "email"],
         appearance: {
