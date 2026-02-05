@@ -66,6 +66,7 @@ export function SpinWheel({
   const waitingAnimationRef = useRef<number | null>(null);
   const previousUserTierIndexRef = useRef<number | null | undefined>(undefined);
   const spinSoundRef = useRef<{ stop: () => void } | null>(null);
+  const hasInitializedRef = useRef(false);
 
   const segments = useMemo((): WheelSegment[] => {
     const segs: WheelSegment[] = [];
@@ -228,6 +229,36 @@ export function SpinWheel({
       }
     };
   }, []);
+
+  // Handle returning users who already have a result - show result directly
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    
+    // If user already has result on page load, show it directly
+    if (canSpin && userTierIndex !== -1 && userPrizeAmount !== undefined && !hasSpun) {
+      hasInitializedRef.current = true;
+      
+      const sliceAngle = 360 / segments.length;
+      let targetSegmentIndex: number;
+
+      if (userTierIndex === null) {
+        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === null);
+      } else {
+        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === userTierIndex);
+      }
+
+      if (targetSegmentIndex === -1) targetSegmentIndex = 0;
+
+      // Set rotation to land on the correct segment
+      const targetAngle = 360 - (targetSegmentIndex * sliceAngle + sliceAngle / 2);
+      setRotation(targetAngle);
+      setHasSpun(true);
+
+      const winningSegment = segments[targetSegmentIndex];
+      const actualAmount = formatUnits(userPrizeAmount, decimals);
+      setResult({ label: winningSegment.label, amount: actualAmount });
+    }
+  }, [canSpin, userTierIndex, userPrizeAmount, hasSpun, segments, decimals]);
 
   // When result arrives (userTierIndex changes from -1 to actual value), stop and land on prize
   useEffect(() => {
