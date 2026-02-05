@@ -45,11 +45,11 @@ export function Header() {
 
         <nav className="hidden md:flex items-center gap-6">
           <NavLink href="/" active={pathname === "/"}>
-            🏠 Trang Chu
+            🏠 Home
           </NavLink>
           <NavLink href="/admin" active={isAdmin}>
             <LayoutDashboard className="w-4 h-4 mr-1" />
-            Quan Ly
+            Manage
           </NavLink>
         </nav>
 

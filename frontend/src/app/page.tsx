@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Zap, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { DrawCard } from "@/components/DrawCard";
@@ -70,8 +69,8 @@ function DrawsList() {
     return (
       <Card className="text-center py-12 envelope-card">
         <span className="text-6xl block mb-4">🧧</span>
-        <p className="text-[#FFD700] text-lg">Chua co li xi nao</p>
-        <p className="text-[#FFB6C1] text-sm mt-2">Quay lai sau de nhan li xi may man!</p>
+        <p className="text-[#FFD700] text-lg">No lucky money available yet</p>
+        <p className="text-[#FFB6C1] text-sm mt-2">Come back later to receive lucky money!</p>
       </Card>
     );
   }
@@ -113,29 +112,7 @@ function DrawCardWrapper({ drawId }: { drawId: number }) {
   return <DrawCard drawId={drawId} draw={draw as Draw} />;
 }
 
-const features = [
-  {
-    icon: Shield,
-    title: "Cong Bang Tuyet Doi",
-    description: "Su dung Chainlink VRF dam bao tinh ngau nhien minh bach",
-    color: "#FFD700",
-    emoji: "🔐",
-  },
-  {
-    icon: Zap,
-    title: "Nhan Thuong Ngay",
-    description: "Li xi duoc chuyen tu dong tren blockchain",
-    color: "#DC143C",
-    emoji: "⚡",
-  },
-  {
-    icon: Trophy,
-    title: "Nhieu Muc Thuong",
-    description: "Cac muc li xi khac nhau voi ty le trung rieng",
-    color: "#FF8C00",
-    emoji: "🏆",
-  },
-];
+
 
 export default function Home() {
   return (
@@ -172,11 +149,11 @@ export default function Home() {
               <span className="text-[#FFD700] text-glow-gold">Li Xi Tet</span>
             </h1>
             <h2 className="text-2xl md:text-3xl font-medium mb-6 text-[#FFB6C1]">
-              Chuc Mung Nam Moi 2025 🐍
+              Happy New Year 2025 🐍
             </h2>
             <p className="text-xl text-[#FFF8DC]/80 max-w-2xl mx-auto mb-10">
-              Quay so trung thuong li xi may man dau nam. 
-              Cong bang, minh bach va xac minh duoc voi Chainlink VRF.
+              Lucky draw for lucky money at the beginning of the year. 
+              Fair, transparent and verifiable with Chainlink VRF.
             </p>
           </motion.div>
 
@@ -216,9 +193,9 @@ export default function Home() {
             className="grid grid-cols-3 gap-8 max-w-lg mx-auto"
           >
             {[
-              { value: "100%", label: "Cong Bang", emoji: "✨" },
+              { value: "100%", label: "Fair", emoji: "✨" },
               { value: "VRF", label: "Chainlink", emoji: "🔗" },
-              { value: "Ngay", label: "Nhan Thuong", emoji: "⚡" },
+              { value: "Instant", label: "Rewards", emoji: "⚡" },
             ].map((stat, i) => (
               <div key={i}>
                 <div className="text-2xl md:text-3xl font-bold text-[#FFD700] text-glow-gold">
@@ -231,36 +208,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-16 px-4 relative z-10">
-        <div className="container mx-auto">
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {features.map((feature, i) => (
-              <motion.div key={i} variants={fadeInUp}>
-                <Card className="text-center h-full envelope-card hover:scale-105 transition-transform">
-                  <div
-                    className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center border-2"
-                    style={{ 
-                      backgroundColor: `${feature.color}20`,
-                      borderColor: feature.color 
-                    }}
-                  >
-                    <span className="text-3xl">{feature.emoji}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-[#FFD700] mb-2">{feature.title}</h3>
-                  <p className="text-[#FFF8DC]/70 text-sm">{feature.description}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+
 
       {/* Active Draws */}
       <section className="py-16 px-4 relative z-10">
@@ -273,15 +221,15 @@ export default function Home() {
           >
             <div>
               <h2 className="text-3xl font-bold text-[#FFD700] text-glow-gold flex items-center gap-3">
-                🧧 Li Xi Dang Mo
+                🧧 Active Draws
               </h2>
-              <p className="text-[#FFB6C1] mt-1">Tham gia de co co hoi nhan li xi may man</p>
+              <p className="text-[#FFB6C1] mt-1">Join to have a chance to receive lucky money</p>
             </div>
             <Link
               href="/admin"
               className="text-sm text-[#FFD700] hover:text-[#FFE55C] hidden md:block border border-[#FFD700]/30 px-4 py-2 rounded-lg hover:bg-[#FFD700]/10 transition-all"
             >
-              Quan Ly →
+              Manage →
             </Link>
           </motion.div>
           <DrawsList />
@@ -297,7 +245,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-3xl font-bold text-[#FFD700] text-center mb-12 text-glow-gold"
           >
-            🏮 Cach Tham Gia 🏮
+            🏮 How to Participate 🏮
           </motion.h2>
           <motion.div
             variants={staggerContainer}
@@ -307,10 +255,10 @@ export default function Home() {
             className="grid grid-cols-1 md:grid-cols-4 gap-8"
           >
             {[
-              { step: "1", icon: "👛", title: "Ket Noi Vi", desc: "Ket noi vi cua ban de bat dau" },
-              { step: "2", icon: "🎫", title: "Tham Gia", desc: "Dang ky tham gia neu ban duoc moi" },
-              { step: "3", icon: "🎲", title: "Cho Doi", desc: "VRF tao so ngau nhien minh bach" },
-              { step: "4", icon: "🧧", title: "Nhan Thuong", desc: "Quay vong quay va nhan li xi" },
+              { step: "1", icon: "👛", title: "Connect Wallet", desc: "Connect your wallet to get started" },
+              { step: "2", icon: "🎫", title: "Join", desc: "Register to participate if you are invited" },
+              { step: "3", icon: "🎲", title: "Wait", desc: "VRF generates transparent random numbers" },
+              { step: "4", icon: "🧧", title: "Receive Reward", desc: "Spin the wheel and receive lucky money" },
             ].map((item, i) => (
               <motion.div key={i} variants={fadeInUp} className="text-center">
                 <div className="relative inline-block">
@@ -341,11 +289,11 @@ export default function Home() {
             <span className="font-bold text-[#FFD700]">Li Xi Tet 2025</span>
           </div>
           <p className="text-[#FFB6C1] text-sm text-center">
-            Powered by Chainlink VRF • Ronin Saigon Testnet • 🐍 Nam Ty
+            Powered by Chainlink VRF • Ronin Saigon Testnet • 🐍 Year of the Snake
           </p>
           <div className="flex gap-4">
             <span className="text-[#FFD700]/60 text-sm">
-              Chuc Mung Nam Moi ✨
+              Happy New Year ✨
             </span>
           </div>
         </div>
