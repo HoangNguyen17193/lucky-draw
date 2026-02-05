@@ -39,7 +39,7 @@ export function Header() {
             <span className="text-xl font-bold text-[#FFD700] text-glow-gold">
               Li Xi Tet
             </span>
-            <span className="text-[10px] text-[#FFB6C1]">Lucky Money 2025</span>
+            <span className="text-[10px] text-[#FFB6C1]">Lucky Money 2026</span>
           </div>
         </Link>
 

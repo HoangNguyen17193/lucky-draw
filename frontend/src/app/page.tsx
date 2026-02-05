@@ -149,7 +149,7 @@ export default function Home() {
               <span className="text-[#FFD700] text-glow-gold">Li Xi Tet</span>
             </h1>
             <h2 className="text-2xl md:text-3xl font-medium mb-6 text-[#FFB6C1]">
-              Happy New Year 2025 🐍
+              Happy New Year 2026 🐴
             </h2>
             <p className="text-xl text-[#FFF8DC]/80 max-w-2xl mx-auto mb-10">
               Lucky draw for lucky money at the beginning of the year. 
@@ -286,10 +286,10 @@ export default function Home() {
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🧧</span>
-            <span className="font-bold text-[#FFD700]">Li Xi Tet 2025</span>
+            <span className="font-bold text-[#FFD700]">Li Xi Tet 2026</span>
           </div>
           <p className="text-[#FFB6C1] text-sm text-center">
-            Powered by Chainlink VRF • Ronin Saigon Testnet • 🐍 Year of the Snake
+            Powered by Chainlink VRF • Ronin Saigon Testnet • 🐴 Year of the Horse
           </p>
           <div className="flex gap-4">
             <span className="text-[#FFD700]/60 text-sm">
