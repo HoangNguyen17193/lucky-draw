@@ -65,17 +65,8 @@ async function main() {
   // Show updated draw info
   const updatedDraw = await luckyDrawManager.getDraw(drawId);
   console.log("Total funded amount:", ethers.formatUnits(updatedDraw.fundedAmount, decimals), "USDC");
-
-  // Show required vs funded
-  const requiredFunding = await luckyDrawManager.getMaxPayout(drawId);
-  console.log("Max possible payout:", ethers.formatUnits(requiredFunding, decimals), "USDC");
-  
-  if (updatedDraw.fundedAmount >= requiredFunding) {
-    console.log("\n✓ Draw is fully funded and ready to close entries!");
-  } else {
-    const remaining = requiredFunding - updatedDraw.fundedAmount;
-    console.log("\n⚠ Still need", ethers.formatUnits(remaining, decimals), "more USDC");
-  }
+  console.log("Total distributed:", ethers.formatUnits(updatedDraw.totalDistributed, decimals), "USDC");
+  console.log("Available funds:", ethers.formatUnits(updatedDraw.fundedAmount - updatedDraw.totalDistributed, decimals), "USDC");
 }
 
 main()

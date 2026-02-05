@@ -39,12 +39,6 @@ async function main() {
   console.log("  Default Prize:", ethers.formatUnits(drawInfo.defaultPrize, decimals), "USDC");
   console.log("  Entrants:", drawInfo.entrantCount.toString());
   console.log("  Tiers:", drawInfo.tierCount.toString());
-
-  // Calculate max payout
-  const maxPayout = await luckyDrawManager.getMaxPayout(drawId);
-
-  console.log("\nFunding Requirements:");
-  console.log("  Max Possible Payout:", ethers.formatUnits(maxPayout, decimals), "USDC");
   console.log("  Current Funded:", ethers.formatUnits(drawInfo.fundedAmount, decimals), "USDC");
 }
 

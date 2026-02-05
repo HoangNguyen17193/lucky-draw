@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 
 const LUCKY_DRAW_MANAGER = process.env.LUCKY_DRAW_MANAGER_ADDRESS || "";
+const decimals = 6; // USDC
 
 async function main() {
   if (!LUCKY_DRAW_MANAGER) {
@@ -12,45 +13,28 @@ async function main() {
     throw new Error("DRAW_ID not set in environment");
   }
 
-  console.log("Requesting VRF randomness for draw:", drawId);
+  console.log("Getting draw info:", drawId);
   console.log("Contract:", LUCKY_DRAW_MANAGER);
 
   const luckyDrawManager = await ethers.getContractAt("LuckyDrawManager", LUCKY_DRAW_MANAGER);
 
-  // Get draw info first
+  // Get draw info
   const drawInfo = await luckyDrawManager.getDraw(drawId);
-  const statusNames = ["Open", "EntriesClosed", "RandomnessRequested", "Finalized", "Cancelled"];
-  console.log("\nDraw status:", statusNames[Number(drawInfo.status)]);
+  const statusNames = ["Open", "Closed", "Cancelled"];
+  
+  console.log("\n========================================");
+  console.log("Draw #" + drawId);
+  console.log("========================================");
+  console.log("Status:", statusNames[Number(drawInfo.status)]);
+  console.log("Token:", drawInfo.token);
+  console.log("Funded:", ethers.formatUnits(drawInfo.fundedAmount, decimals), "USDC");
+  console.log("Distributed:", ethers.formatUnits(drawInfo.totalDistributed, decimals), "USDC");
+  console.log("Entrants:", drawInfo.entrantCount.toString());
+  console.log("Tiers:", drawInfo.tierCount.toString());
+  console.log("Default Prize:", ethers.formatUnits(drawInfo.defaultPrize, decimals), "USDC");
 
-  if (Number(drawInfo.status) !== 1) {
-    throw new Error("Draw must be in EntriesClosed status to request randomness");
-  }
-
-  console.log("\nRequesting randomness from Chainlink VRF...");
-  const tx = await luckyDrawManager.requestDraw(drawId);
-  console.log("Transaction hash:", tx.hash);
-  const receipt = await tx.wait();
-
-  // Parse event to get request ID
-  const event = receipt?.logs.find((log: any) => {
-    try {
-      const parsed = luckyDrawManager.interface.parseLog(log);
-      return parsed?.name === "DrawRequested";
-    } catch {
-      return false;
-    }
-  });
-
-  if (event) {
-    const parsed = luckyDrawManager.interface.parseLog(event);
-    console.log("\n========================================");
-    console.log("VRF Request submitted!");
-    console.log("Request ID:", parsed?.args.requestId.toString());
-    console.log("========================================");
-  }
-
-  console.log("\n⏳ Waiting for Chainlink VRF to fulfill the request...");
-  console.log("This typically takes 1-3 blocks. Check the contract for DrawFinalized event.");
+  console.log("\nNote: In this contract design, VRF is requested per-user when they enter.");
+  console.log("There is no separate requestDraw() function.");
 }
 
 main()

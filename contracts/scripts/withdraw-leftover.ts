@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 
 const LUCKY_DRAW_MANAGER = process.env.LUCKY_DRAW_MANAGER_ADDRESS || "";
+const decimals = 6; // USDC
 
 async function main() {
   if (!LUCKY_DRAW_MANAGER) {
@@ -25,20 +26,20 @@ async function main() {
   // Get draw info
   const drawInfo = await luckyDrawManager.getDraw(drawId);
   
-  // Check draw status (4 = Finalized)
-  const statusNames = ["Open", "EntriesClosed", "RandomnessRequested", "Finalized", "Cancelled"];
+  // Check draw status (1 = Closed)
+  const statusNames = ["Open", "Closed", "Cancelled"];
   console.log("\nDraw status:", statusNames[Number(drawInfo.status)]);
 
-  if (Number(drawInfo.status) !== 3) {
-    throw new Error("Draw must be Finalized to withdraw leftover");
+  if (Number(drawInfo.status) !== 1) {
+    throw new Error("Draw must be Closed to withdraw leftover");
   }
 
   const leftover = drawInfo.fundedAmount - drawInfo.totalDistributed;
-  console.log("Funded amount:", ethers.formatEther(drawInfo.fundedAmount), "tokens");
-  console.log("Distributed:", ethers.formatEther(drawInfo.totalDistributed), "tokens");
-  console.log("Leftover:", ethers.formatEther(leftover), "tokens");
+  console.log("Funded amount:", ethers.formatUnits(drawInfo.fundedAmount, decimals), "USDC");
+  console.log("Distributed:", ethers.formatUnits(drawInfo.totalDistributed, decimals), "USDC");
+  console.log("Leftover:", ethers.formatUnits(leftover, decimals), "USDC");
 
-  if (leftover === 0n) {
+  if (leftover <= 0n) {
     console.log("\nNo leftover to withdraw!");
     return;
   }
@@ -49,7 +50,7 @@ async function main() {
   await tx.wait();
 
   console.log("\nLeftover withdrawn successfully!");
-  console.log("Amount:", ethers.formatEther(leftover), "tokens sent to", recipient);
+  console.log("Amount:", ethers.formatUnits(leftover, decimals), "USDC sent to", recipient);
 }
 
 main()
