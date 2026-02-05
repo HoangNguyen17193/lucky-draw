@@ -64,6 +64,11 @@ export default function DrawPage() {
     
     try {
       const hash = await enterDraw(drawId);
+      
+      // Transaction confirmed - now waiting for VRF
+      setIsEntering(false);
+      setIsWaitingVRF(true);
+      
       toast.success("Entry submitted! The wheel is spinning...", {
         description: `Transaction: ${hash.slice(0, 10)}...`,
         action: {
@@ -72,9 +77,6 @@ export default function DrawPage() {
         },
       });
 
-      // Start polling for VRF result - wheel is already spinning
-      setIsWaitingVRF(true);
-      
       // Poll until we get a result
       const pollInterval = setInterval(async () => {
         const result = await refetchUserResult();
@@ -89,10 +91,8 @@ export default function DrawPage() {
       // Timeout after 2 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
-        if (isWaitingVRF) {
-          setIsWaitingVRF(false);
-          toast.info("VRF is taking longer than expected. Check back soon!");
-        }
+        setIsWaitingVRF(false);
+        toast.info("VRF is taking longer than expected. Check back soon!");
       }, 120000);
 
     } catch (error) {
@@ -100,10 +100,9 @@ export default function DrawPage() {
       toast.error("Failed to enter draw", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
+      setIsEntering(false);
       setIsWaitingVRF(false);
       setShowWheel(false); // Hide wheel on error
-    } finally {
-      setIsEntering(false);
     }
   };
 
@@ -189,7 +188,7 @@ export default function DrawPage() {
                   <Card className="mb-8 text-center w-full max-w-md envelope-card">
                     <span className="text-4xl block mb-4">👛</span>
                     <p className="text-[#FFD700] mb-4">
-                      Ket noi vi de tham gia nhan li xi
+                      Connect your wallet to receive lucky money
                     </p>
                   </Card>
                 </motion.div>
@@ -205,45 +204,29 @@ export default function DrawPage() {
                   <Card variant="bordered" className="mb-8 text-center w-full max-w-md border-[#FFD700]/50">
                     <AlertCircle className="w-10 h-10 text-[#FFD700] mx-auto mb-4" />
                     <p className="text-[#FFD700]">
-                      Vi cua ban chua duoc moi tham gia
+                      Your wallet is not invited to participate
                     </p>
                   </Card>
                 </motion.div>
               )}
 
-              {authenticated && (hasEntered || showWheel) && !hasResult && (
-                <motion.div
-                  key="waiting-vrf"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <Card variant="bordered" className="mb-8 text-center w-full max-w-md border-[#FFD700]/50">
-                    <motion.p 
-                      className="text-[#FFD700] font-medium text-lg"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
-                      🎲 Dang xac dinh phan thuong...
-                    </motion.p>
-                    <p className="text-[#FFB6C1] text-sm mt-2">
-                      Vong quay se dung khi li xi san sang!
-                    </p>
-                  </Card>
-                </motion.div>
-              )}
+
             </AnimatePresence>
 
-            {/* Spin wheel or placeholder */}
-            {(hasEntered || showWheel) && tiers ? (
+            {/* Spin wheel - always show full wheel */}
+            {tiers ? (
               <SpinWheel
                 tiers={tiers as Tier[]}
                 defaultPrize={draw.defaultPrize}
                 userTierIndex={userTierIndex}
+                userPrizeAmount={hasResult ? userResult?.prizeAmount : undefined}
                 canSpin={canSpin}
                 symbol="USDC"
                 decimals={6}
                 isWaitingForResult={isWaitingVRF || (showWheel && !hasResult)}
+                isIdle={canEnter && !showWheel}
+                onEnterClick={handleEnter}
+                isEntering={isEntering}
               />
             ) : (
               <div className="relative">
@@ -271,31 +254,11 @@ export default function DrawPage() {
               </div>
             )}
 
-            {/* Enter button - Tết styled */}
-            {canEnter && !showWheel && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="mt-8"
-              >
-                <Button
-                  onClick={handleEnter}
-                  isLoading={isEntering}
-                  size="lg"
-                  className="min-w-[220px]"
-                >
-                  🧧 Nhan Li Xi
-                </Button>
-                <p className="text-xs text-[#FFB6C1] mt-2 text-center">
-                  Phi VRF duoc thanh toan tu subscription
-                </p>
-              </motion.div>
-            )}
+
 
             {draw.status === DrawStatus.Closed && !hasEntered && (
               <Card className="mt-8 text-center envelope-card">
-                <p className="text-[#FFD700]">🔒 Li xi nay da dong - khong nhan them nguoi choi</p>
+                <p className="text-[#FFD700]">🔒 This draw is closed - no more participants accepted</p>
               </Card>
             )}
           </motion.div>

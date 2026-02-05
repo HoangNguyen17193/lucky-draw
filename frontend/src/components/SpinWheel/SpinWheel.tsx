@@ -6,6 +6,7 @@ import confetti from "canvas-confetti";
 import { Tier } from "@/types/draw";
 import { formatUnits } from "viem";
 import { cn } from "@/lib/utils";
+import { playSpinningSound, playWinSound, playSlowdownSound, playClickSound } from "@/lib/sounds";
 
 interface SpinWheelProps {
   tiers: Tier[];
@@ -13,9 +14,13 @@ interface SpinWheelProps {
   decimals?: number;
   symbol?: string;
   userTierIndex: number | null; // -1 = not determined yet, null = default prize, number = tier index
+  userPrizeAmount?: bigint; // Actual prize amount from contract
   onSpinComplete?: (tierIndex: number | null, amount: string) => void;
   canSpin: boolean;
   isWaitingForResult?: boolean; // New prop: true when tx submitted but waiting for VRF
+  isIdle?: boolean; // New prop: true when showing wheel in idle state (before user enters)
+  onEnterClick?: () => void; // Callback when user clicks to enter in idle state
+  isEntering?: boolean; // True when tx is being submitted
 }
 
 interface WheelSegment {
@@ -44,9 +49,13 @@ export function SpinWheel({
   decimals = 6,
   symbol = "USDC",
   userTierIndex,
+  userPrizeAmount,
   onSpinComplete,
   canSpin,
   isWaitingForResult = false,
+  isIdle = false,
+  onEnterClick,
+  isEntering = false,
 }: SpinWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rotation, setRotation] = useState(0);
@@ -56,6 +65,7 @@ export function SpinWheel({
   const [result, setResult] = useState<{ label: string; amount: string } | null>(null);
   const waitingAnimationRef = useRef<number | null>(null);
   const previousUserTierIndexRef = useRef<number | null | undefined>(undefined);
+  const spinSoundRef = useRef<{ stop: () => void } | null>(null);
 
   const segments = useMemo((): WheelSegment[] => {
     const segs: WheelSegment[] = [];
@@ -151,9 +161,9 @@ export function SpinWheel({
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    // Draw center circle
+    // Draw center circle (matches button size: 80px = 40px radius)
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 35, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY, 42, 0, 2 * Math.PI);
     ctx.fillStyle = "#1a2744";
     ctx.fill();
     ctx.strokeStyle = "#FFD700";
@@ -167,28 +177,57 @@ export function SpinWheel({
     drawWheel();
   }, [drawWheel]);
 
-  // Start continuous spinning when waiting for VRF result
+  // Start continuous spinning when entering or waiting for VRF result
   useEffect(() => {
-    if (isWaitingForResult && !isWaitingSpinning && !hasSpun) {
+    const shouldSpin = (isEntering || isWaitingForResult) && !hasSpun;
+    
+    if (shouldSpin && !isWaitingSpinning) {
       setIsWaitingSpinning(true);
-      let currentRotation = rotation;
+      let currentRotation = 0;
       const speed = 8; // degrees per frame
+
+      // Start spinning sound
+      try {
+        spinSoundRef.current = playSpinningSound();
+      } catch (e) {
+        console.log('Audio not available:', e);
+      }
 
       const animate = () => {
         currentRotation += speed;
-        setRotation(currentRotation % 360);
+        setRotation(currentRotation);
         waitingAnimationRef.current = requestAnimationFrame(animate);
       };
 
       waitingAnimationRef.current = requestAnimationFrame(animate);
     }
+    
+    // Stop spinning if conditions no longer met (but not if we're about to land on prize)
+    if (!shouldSpin && isWaitingSpinning && !isSpinning) {
+      if (waitingAnimationRef.current) {
+        cancelAnimationFrame(waitingAnimationRef.current);
+        waitingAnimationRef.current = null;
+      }
+      // Stop spinning sound
+      if (spinSoundRef.current) {
+        spinSoundRef.current.stop();
+        spinSoundRef.current = null;
+      }
+      setIsWaitingSpinning(false);
+    }
+  }, [isEntering, isWaitingForResult, isWaitingSpinning, hasSpun, isSpinning]);
 
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       if (waitingAnimationRef.current) {
         cancelAnimationFrame(waitingAnimationRef.current);
       }
+      if (spinSoundRef.current) {
+        spinSoundRef.current.stop();
+      }
     };
-  }, [isWaitingForResult, isWaitingSpinning, hasSpun, rotation]);
+  }, []);
 
   // When result arrives (userTierIndex changes from -1 to actual value), stop and land on prize
   useEffect(() => {
@@ -201,6 +240,17 @@ export function SpinWheel({
       if (waitingAnimationRef.current) {
         cancelAnimationFrame(waitingAnimationRef.current);
         waitingAnimationRef.current = null;
+      }
+
+      // Stop spinning sound and play slowdown sound
+      if (spinSoundRef.current) {
+        spinSoundRef.current.stop();
+        spinSoundRef.current = null;
+      }
+      try {
+        playSlowdownSound();
+      } catch (e) {
+        console.log('Audio not available:', e);
       }
 
       // Now do the final spin to land on the prize
@@ -256,7 +306,18 @@ export function SpinWheel({
           setHasSpun(true);
 
           const winningSegment = segments[targetSegmentIndex];
-          setResult({ label: winningSegment.label, amount: winningSegment.amount });
+          // Use actual prize amount from contract if available, otherwise use segment amount
+          const actualAmount = userPrizeAmount !== undefined 
+            ? formatUnits(userPrizeAmount, decimals)
+            : winningSegment.amount;
+          setResult({ label: winningSegment.label, amount: actualAmount });
+
+          // Play win celebration sound
+          try {
+            playWinSound();
+          } catch (e) {
+            console.log('Audio not available:', e);
+          }
 
           // Tết celebration confetti - Red and Gold
           const confettiDuration = 3000;
@@ -371,7 +432,7 @@ export function SpinWheel({
   return (
     <div className="flex flex-col items-center">
       {/* Tết-themed glow effect - Red and Gold */}
-      <div className="relative">
+      <div className="relative flex flex-col items-center">
         <motion.div
           animate={{
             scale: [1, 1.1, 1],
@@ -382,45 +443,71 @@ export function SpinWheel({
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute inset-[-20px] rounded-full bg-gradient-to-r from-[#FFD700] via-[#DC143C] to-[#FF8C00] blur-3xl"
+          className="absolute inset-[-20px] rounded-full bg-gradient-to-r from-[#FFD700] via-[#DC143C] to-[#FF8C00] blur-3xl pointer-events-none"
         />
 
-        {/* Wheel container */}
-        <div className="relative">
+        {/* Wheel container - clickable */}
+        <motion.div 
+          className={cn(
+            "relative w-[400px] h-[400px] rounded-full",
+            (isIdle && !isEntering) || (canSpin && !isSpinning && !isWaitingSpinning && !hasSpun)
+              ? "cursor-pointer"
+              : isEntering || isWaitingSpinning || isSpinning
+              ? "cursor-wait"
+              : "cursor-default"
+          )}
+          whileHover={(isIdle && !isEntering) || (canSpin && !isSpinning && !isWaitingSpinning && !hasSpun) ? { scale: 1.03 } : {}}
+          whileTap={(isIdle && !isEntering) || (canSpin && !isSpinning && !isWaitingSpinning && !hasSpun) ? { scale: 0.98 } : {}}
+          onClick={() => {
+            if (isIdle && !isEntering && onEnterClick) {
+              try {
+                playClickSound();
+              } catch (e) {
+                console.log('Audio not available:', e);
+              }
+              onEnterClick();
+            } else if (canSpin && !isSpinning && !isWaitingSpinning && !hasSpun) {
+              try {
+                playClickSound();
+              } catch (e) {
+                console.log('Audio not available:', e);
+              }
+              spinWheel();
+            }
+          }}
+        >
           <canvas
             ref={canvasRef}
             width={400}
             height={400}
-            className="relative z-10"
+            className="relative z-10 w-full h-full"
           />
 
           {/* Pointer */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
             <motion.div
-              animate={isSpinning ? { y: [0, -5, 0] } : {}}
-              transition={{ duration: 0.1, repeat: isSpinning ? Infinity : 0 }}
+              animate={isSpinning || isWaitingSpinning ? { y: [0, -5, 0] } : {}}
+              transition={{ duration: 0.1, repeat: isSpinning || isWaitingSpinning ? Infinity : 0 }}
               className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[30px] border-l-transparent border-r-transparent border-t-[#FFD700] drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]"
             />
           </div>
 
-          {/* Center button - Tết themed with 福 character */}
-          <motion.button
-            whileHover={canSpin && !isSpinning && !isWaitingSpinning && !hasSpun ? { scale: 1.1 } : {}}
-            whileTap={canSpin && !isSpinning && !isWaitingSpinning && !hasSpun ? { scale: 0.95 } : {}}
-            onClick={spinWheel}
-            disabled={!canSpin || isSpinning || isWaitingSpinning || hasSpun}
+          {/* Center display - Tết themed with 福 character */}
+          <div
             className={cn(
-              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20",
-              "w-20 h-20 rounded-full font-bold text-sm",
+              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none",
+              "w-20 h-20 rounded-full font-bold text-sm flex items-center justify-center",
               "transition-all duration-200 border-4 border-[#8B0000]",
-              isWaitingSpinning || isSpinning
-                ? "bg-gradient-to-br from-[#FFE55C] to-[#DAA520] text-[#8B0000] cursor-wait shadow-[0_0_30px_rgba(255,215,0,0.6)] animate-pulse"
-                : canSpin && !hasSpun
-                ? "bg-gradient-to-br from-[#FFE55C] to-[#DAA520] text-[#8B0000] cursor-pointer shadow-[0_0_30px_rgba(255,215,0,0.5)] hover:shadow-[0_0_40px_rgba(255,215,0,0.8)]"
-                : "bg-[#5C0000] text-[#8B4513] cursor-not-allowed border-[#5C0000]"
+              isEntering || isWaitingSpinning || isSpinning
+                ? "bg-gradient-to-br from-[#FFE55C] to-[#DAA520] text-[#8B0000] shadow-[0_0_30px_rgba(255,215,0,0.6)] animate-pulse"
+                : isIdle || (canSpin && !hasSpun)
+                ? "bg-gradient-to-br from-[#FFE55C] to-[#DAA520] text-[#8B0000] shadow-[0_0_30px_rgba(255,215,0,0.5)]"
+                : "bg-[#5C0000] text-[#8B4513] border-[#5C0000]"
             )}
           >
-            {isWaitingSpinning ? (
+            {isEntering ? (
+              <span className="text-2xl">⏳</span>
+            ) : isWaitingSpinning ? (
               <span className="text-2xl">🎲</span>
             ) : isSpinning ? (
               <span className="text-2xl">🎲</span>
@@ -429,7 +516,31 @@ export function SpinWheel({
             ) : (
               <span className="text-2xl">福</span>
             )}
-          </motion.button>
+          </div>
+          
+        </motion.div>
+        
+        {/* Hint text below wheel */}
+        <div className="h-8 mt-4 flex items-center justify-center">
+          {isIdle && !isEntering && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[#FFD700] text-sm font-medium whitespace-nowrap"
+            >
+              Click to receive lucky money 🧧
+            </motion.div>
+          )}
+          
+          {isEntering && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[#FFD700] text-sm font-medium whitespace-nowrap"
+            >
+              Please sign the transaction...
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -449,7 +560,7 @@ export function SpinWheel({
             >
               🧧
             </motion.div>
-            <p className="text-xl text-[#FFD700] mb-2">Chuc Mung! Ban nhan duoc</p>
+            <p className="text-xl text-[#FFD700] mb-2">Congratulations! You received</p>
             <motion.div
               initial={{ scale: 0.5 }}
               animate={{ scale: 1 }}
@@ -468,22 +579,12 @@ export function SpinWheel({
               transition={{ delay: 0.5 }}
               className="mt-4 text-2xl"
             >
-              🎊 An Khang Thinh Vuong 🎊
+              🎊 Happy New Year! 🎊
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Spin button (when not yet spun) */}
-      {!result && (
-        <div className="mt-8">
-          {!canSpin && !hasSpun && (
-            <p className="text-gray-500 text-sm text-center">
-              Wait for the draw to finalize to spin the wheel
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

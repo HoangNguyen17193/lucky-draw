@@ -216,7 +216,7 @@ export default function Home() {
             <span className="font-bold text-[#FFD700]">Li Xi Tet 2026</span>
           </div>
           <p className="text-[#FFB6C1] text-sm text-center">
-            Powered by Chainlink VRF • Ronin Saigon Testnet • 🐴 Year of the Horse
+            Powered by VRF • Ronin • 🐴 Year of the Horse
           </p>
           <div className="flex gap-4">
             <span className="text-[#FFD700]/60 text-sm">
