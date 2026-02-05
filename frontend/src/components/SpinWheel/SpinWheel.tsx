@@ -1,0 +1,489 @@
+"use client";
+
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
+import { Tier } from "@/types/draw";
+import { formatUnits } from "viem";
+import { cn } from "@/lib/utils";
+
+interface SpinWheelProps {
+  tiers: Tier[];
+  defaultPrize: bigint;
+  decimals?: number;
+  symbol?: string;
+  userTierIndex: number | null; // -1 = not determined yet, null = default prize, number = tier index
+  onSpinComplete?: (tierIndex: number | null, amount: string) => void;
+  canSpin: boolean;
+  isWaitingForResult?: boolean; // New prop: true when tx submitted but waiting for VRF
+}
+
+interface WheelSegment {
+  label: string;
+  amount: string;
+  color: string;
+  gradient: string;
+  tierIndex: number | null;
+}
+
+// Tết-themed colors - Red, Gold, Orange tones
+const SEGMENT_COLORS = [
+  { color: "#FFD700", gradient: "linear-gradient(135deg, #FFD700 0%, #FFA500 100%)" }, // Gold
+  { color: "#DC143C", gradient: "linear-gradient(135deg, #DC143C 0%, #8B0000 100%)" }, // Crimson Red
+  { color: "#FF8C00", gradient: "linear-gradient(135deg, #FF8C00 0%, #FF6600 100%)" }, // Orange
+  { color: "#FFE55C", gradient: "linear-gradient(135deg, #FFE55C 0%, #FFD700 100%)" }, // Light Gold
+  { color: "#B22222", gradient: "linear-gradient(135deg, #B22222 0%, #8B0000 100%)" }, // Firebrick Red
+  { color: "#FFA500", gradient: "linear-gradient(135deg, #FFA500 0%, #FF8C00 100%)" }, // Orange
+  { color: "#DAA520", gradient: "linear-gradient(135deg, #DAA520 0%, #B8860B 100%)" }, // Goldenrod
+  { color: "#CD5C5C", gradient: "linear-gradient(135deg, #CD5C5C 0%, #DC143C 100%)" }, // Indian Red
+];
+
+export function SpinWheel({
+  tiers,
+  defaultPrize,
+  decimals = 6,
+  symbol = "USDC",
+  userTierIndex,
+  onSpinComplete,
+  canSpin,
+  isWaitingForResult = false,
+}: SpinWheelProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [rotation, setRotation] = useState(0);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [isWaitingSpinning, setIsWaitingSpinning] = useState(false);
+  const [hasSpun, setHasSpun] = useState(false);
+  const [result, setResult] = useState<{ label: string; amount: string } | null>(null);
+  const waitingAnimationRef = useRef<number | null>(null);
+  const previousUserTierIndexRef = useRef<number | null | undefined>(undefined);
+
+  const segments = useMemo((): WheelSegment[] => {
+    const segs: WheelSegment[] = [];
+    const totalSegments = 8;
+    let segmentIndex = 0;
+
+    tiers.forEach((tier, tierIdx) => {
+      const probability = Number(tier.winProbability);
+      const segmentCount = Math.max(1, Math.round((probability / 10000) * totalSegments));
+
+      for (let i = 0; i < segmentCount && segmentIndex < totalSegments; i++) {
+        const colorSet = SEGMENT_COLORS[segmentIndex % SEGMENT_COLORS.length];
+        segs.push({
+          label: tierIdx === 0 ? "JACKPOT!" : `${formatUnits(tier.prizeAmount, decimals)} ${symbol}`,
+          amount: formatUnits(tier.prizeAmount, decimals),
+          color: colorSet.color,
+          gradient: colorSet.gradient,
+          tierIndex: tierIdx,
+        });
+        segmentIndex++;
+      }
+    });
+
+    while (segmentIndex < totalSegments) {
+      const colorSet = SEGMENT_COLORS[segmentIndex % SEGMENT_COLORS.length];
+      segs.push({
+        label: `${formatUnits(defaultPrize, decimals)} ${symbol}`,
+        amount: formatUnits(defaultPrize, decimals),
+        color: colorSet.color,
+        gradient: colorSet.gradient,
+        tierIndex: null,
+      });
+      segmentIndex++;
+    }
+
+    return segs;
+  }, [tiers, defaultPrize, decimals, symbol]);
+
+  const drawWheel = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(centerX, centerY) - 10;
+    const sliceAngle = (2 * Math.PI) / segments.length;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.translate(-centerX, -centerY);
+
+    segments.forEach((seg, i) => {
+      const startAngle = i * sliceAngle - Math.PI / 2;
+      const endAngle = startAngle + sliceAngle;
+
+      // Draw segment
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+      ctx.closePath();
+
+      // Fill with solid color
+      ctx.fillStyle = seg.color;
+      ctx.fill();
+
+      // Add segment border
+      ctx.strokeStyle = "#FFD700";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw text
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(startAngle + sliceAngle / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#000";
+      ctx.font = "bold 14px sans-serif";
+      ctx.shadowColor = "rgba(255,255,255,0.5)";
+      ctx.shadowBlur = 2;
+      ctx.fillText(seg.label, radius - 20, 5);
+      ctx.restore();
+    });
+
+    // Draw outer ring
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Draw center circle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 35, 0, 2 * Math.PI);
+    ctx.fillStyle = "#1a2744";
+    ctx.fill();
+    ctx.strokeStyle = "#FFD700";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.restore();
+  }, [segments, rotation]);
+
+  useEffect(() => {
+    drawWheel();
+  }, [drawWheel]);
+
+  // Start continuous spinning when waiting for VRF result
+  useEffect(() => {
+    if (isWaitingForResult && !isWaitingSpinning && !hasSpun) {
+      setIsWaitingSpinning(true);
+      let currentRotation = rotation;
+      const speed = 8; // degrees per frame
+
+      const animate = () => {
+        currentRotation += speed;
+        setRotation(currentRotation % 360);
+        waitingAnimationRef.current = requestAnimationFrame(animate);
+      };
+
+      waitingAnimationRef.current = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (waitingAnimationRef.current) {
+        cancelAnimationFrame(waitingAnimationRef.current);
+      }
+    };
+  }, [isWaitingForResult, isWaitingSpinning, hasSpun, rotation]);
+
+  // When result arrives (userTierIndex changes from -1 to actual value), stop and land on prize
+  useEffect(() => {
+    const prevIndex = previousUserTierIndexRef.current;
+    previousUserTierIndexRef.current = userTierIndex;
+
+    // Check if we just got the result (was -1, now is a real value)
+    if (prevIndex === -1 && userTierIndex !== -1 && isWaitingSpinning && !hasSpun) {
+      // Stop the waiting animation
+      if (waitingAnimationRef.current) {
+        cancelAnimationFrame(waitingAnimationRef.current);
+        waitingAnimationRef.current = null;
+      }
+
+      // Now do the final spin to land on the prize
+      setIsWaitingSpinning(false);
+      setIsSpinning(true);
+
+      const sliceAngle = 360 / segments.length;
+      let targetSegmentIndex: number;
+
+      if (userTierIndex === null) {
+        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === null);
+      } else {
+        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === userTierIndex);
+      }
+
+      if (targetSegmentIndex === -1) targetSegmentIndex = 0;
+
+      // Calculate final position
+      const currentRotationMod = rotation % 360;
+      const targetAngle = 360 - (targetSegmentIndex * sliceAngle + sliceAngle / 2);
+      
+      // Add extra spins for dramatic effect
+      const extraSpins = 3 + Math.random() * 2;
+      let totalRotation = extraSpins * 360 + targetAngle;
+      
+      // Adjust to make sure we're going forward
+      if (totalRotation < currentRotationMod) {
+        totalRotation += 360;
+      }
+
+      const startRotation = rotation;
+      const deltaRotation = totalRotation - (startRotation % 360) + Math.floor(startRotation / 360) * 360;
+      const finalRotation = startRotation + deltaRotation;
+
+      let startTime: number;
+      const duration = 4000;
+
+      const animateFinal = (currentTime: number) => {
+        if (!startTime) startTime = currentTime;
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Cubic ease out for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentRot = startRotation + (finalRotation - startRotation) * easeOut;
+
+        setRotation(currentRot);
+
+        if (progress < 1) {
+          requestAnimationFrame(animateFinal);
+        } else {
+          setIsSpinning(false);
+          setHasSpun(true);
+
+          const winningSegment = segments[targetSegmentIndex];
+          setResult({ label: winningSegment.label, amount: winningSegment.amount });
+
+          // Tết celebration confetti - Red and Gold
+          const confettiDuration = 3000;
+          const end = Date.now() + confettiDuration;
+
+          const frame = () => {
+            confetti({
+              particleCount: 4,
+              angle: 60,
+              spread: 55,
+              origin: { x: 0 },
+              colors: ["#FFD700", "#DC143C", "#FF8C00", "#FFA500", "#FFE55C"],
+            });
+            confetti({
+              particleCount: 4,
+              angle: 120,
+              spread: 55,
+              origin: { x: 1 },
+              colors: ["#FFD700", "#DC143C", "#FF8C00", "#FFA500", "#FFE55C"],
+            });
+
+            if (Date.now() < end) {
+              requestAnimationFrame(frame);
+            }
+          };
+          frame();
+
+          onSpinComplete?.(winningSegment.tierIndex, winningSegment.amount);
+        }
+      };
+
+      requestAnimationFrame(animateFinal);
+    }
+  }, [userTierIndex, isWaitingSpinning, hasSpun, segments, rotation, onSpinComplete]);
+
+  const spinWheel = useCallback(() => {
+    if (isSpinning || !canSpin || hasSpun) return;
+
+    setIsSpinning(true);
+
+    const sliceAngle = 360 / segments.length;
+    let targetSegmentIndex: number;
+
+    if (userTierIndex === null) {
+      targetSegmentIndex = segments.findIndex((s) => s.tierIndex === null);
+    } else {
+      targetSegmentIndex = segments.findIndex((s) => s.tierIndex === userTierIndex);
+    }
+
+    if (targetSegmentIndex === -1) targetSegmentIndex = 0;
+
+    const spins = 5 + Math.random() * 3;
+    const targetAngle = 360 - (targetSegmentIndex * sliceAngle + sliceAngle / 2);
+    const totalRotation = spins * 360 + targetAngle;
+
+    let startTime: number;
+    const duration = 5000;
+
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Cubic ease out
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentRotation = totalRotation * easeOut;
+
+      setRotation(currentRotation);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setIsSpinning(false);
+        setHasSpun(true);
+
+        const winningSegment = segments[targetSegmentIndex];
+        setResult({ label: winningSegment.label, amount: winningSegment.amount });
+
+        // Tết celebration confetti - Red and Gold
+        const duration = 3000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 4,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ["#FFD700", "#DC143C", "#FF8C00", "#FFA500", "#FFE55C"],
+          });
+          confetti({
+            particleCount: 4,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ["#FFD700", "#DC143C", "#FF8C00", "#FFA500", "#FFE55C"],
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+
+        onSpinComplete?.(winningSegment.tierIndex, winningSegment.amount);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [segments, userTierIndex, isSpinning, canSpin, hasSpun, onSpinComplete]);
+
+  return (
+    <div className="flex flex-col items-center">
+      {/* Tết-themed glow effect - Red and Gold */}
+      <div className="relative">
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-[-20px] rounded-full bg-gradient-to-r from-[#FFD700] via-[#DC143C] to-[#FF8C00] blur-3xl"
+        />
+
+        {/* Wheel container */}
+        <div className="relative">
+          <canvas
+            ref={canvasRef}
+            width={400}
+            height={400}
+            className="relative z-10"
+          />
+
+          {/* Pointer */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+            <motion.div
+              animate={isSpinning ? { y: [0, -5, 0] } : {}}
+              transition={{ duration: 0.1, repeat: isSpinning ? Infinity : 0 }}
+              className="w-0 h-0 border-l-[15px] border-r-[15px] border-t-[30px] border-l-transparent border-r-transparent border-t-[#FFD700] drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]"
+            />
+          </div>
+
+          {/* Center button - Tết themed with 福 character */}
+          <motion.button
+            whileHover={canSpin && !isSpinning && !isWaitingSpinning && !hasSpun ? { scale: 1.1 } : {}}
+            whileTap={canSpin && !isSpinning && !isWaitingSpinning && !hasSpun ? { scale: 0.95 } : {}}
+            onClick={spinWheel}
+            disabled={!canSpin || isSpinning || isWaitingSpinning || hasSpun}
+            className={cn(
+              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20",
+              "w-20 h-20 rounded-full font-bold text-sm",
+              "transition-all duration-200 border-4 border-[#8B0000]",
+              isWaitingSpinning || isSpinning
+                ? "bg-gradient-to-br from-[#FFE55C] to-[#DAA520] text-[#8B0000] cursor-wait shadow-[0_0_30px_rgba(255,215,0,0.6)] animate-pulse"
+                : canSpin && !hasSpun
+                ? "bg-gradient-to-br from-[#FFE55C] to-[#DAA520] text-[#8B0000] cursor-pointer shadow-[0_0_30px_rgba(255,215,0,0.5)] hover:shadow-[0_0_40px_rgba(255,215,0,0.8)]"
+                : "bg-[#5C0000] text-[#8B4513] cursor-not-allowed border-[#5C0000]"
+            )}
+          >
+            {isWaitingSpinning ? (
+              <span className="text-2xl">🎲</span>
+            ) : isSpinning ? (
+              <span className="text-2xl">🎲</span>
+            ) : hasSpun ? (
+              <span className="text-2xl">🧧</span>
+            ) : (
+              <span className="text-2xl">福</span>
+            )}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Result - Tết styled red envelope reveal */}
+      <AnimatePresence>
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+              className="text-6xl mb-4"
+            >
+              🧧
+            </motion.div>
+            <p className="text-xl text-[#FFD700] mb-2">Chuc Mung! Ban nhan duoc</p>
+            <motion.div
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+              className="relative inline-block"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] to-[#FFA500] blur-lg opacity-50" />
+              <p className="relative text-5xl font-bold text-[#FFD700] text-glow-gold">
+                {result.amount} {symbol}
+              </p>
+            </motion.div>
+            <p className="text-lg text-[#FFB6C1] mt-3">{result.label}</p>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-4 text-2xl"
+            >
+              🎊 An Khang Thinh Vuong 🎊
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Spin button (when not yet spun) */}
+      {!result && (
+        <div className="mt-8">
+          {!canSpin && !hasSpun && (
+            <p className="text-gray-500 text-sm text-center">
+              Wait for the draw to finalize to spin the wheel
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

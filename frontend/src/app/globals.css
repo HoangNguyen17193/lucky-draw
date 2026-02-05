@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #8B0000;
+  --bg-secondary: #5C0000;
+  --bg-dark: #3D0000;
+  --text-primary: #FFF8DC;
+  --text-secondary: #FFD700;
+  --accent-gold: #FFD700;
+  --accent-red: #DC143C;
+  --accent-orange: #FF8C00;
+  --accent-pink: #FFB6C1;
+}
+
+body {
+  color: var(--text-primary);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-dark) 100%);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Decorative pattern overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 140, 0, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glow-gold {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);
+  }
+  
+  .glow-red {
+    box-shadow: 0 0 20px rgba(220, 20, 60, 0.5), 0 0 40px rgba(220, 20, 60, 0.3);
+  }
+  
+  .glow-orange {
+    box-shadow: 0 0 20px rgba(255, 140, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.3);
+  }
+  
+  .text-glow-gold {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  
+  .text-glow-red {
+    text-shadow: 0 0 10px rgba(220, 20, 60, 0.8), 0 0 20px rgba(220, 20, 60, 0.5);
+  }
+  
+  .text-glow-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Tết themed glass effect */
+  .glass {
+    background: rgba(139, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+  }
+  
+  .glass-gold {
+    background: rgba(255, 215, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+  }
+  
+  /* Red envelope style button */
+  .btn-gradient {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    transition: all 0.3s ease;
+    border: 2px solid rgba(139, 0, 0, 0.3);
+  }
+  
+  .btn-gradient:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+  }
+  
+  .btn-gradient:active {
+    transform: scale(0.95);
+  }
+  
+  .btn-red {
+    background: linear-gradient(135deg, #DC143C 0%, #8B0000 100%);
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+  }
+  
+  .btn-red:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(220, 20, 60, 0.6);
+  }
+  
+  /* Red envelope card style */
+  .envelope-card {
+    background: linear-gradient(180deg, #DC143C 0%, #8B0000 100%);
+    border: 3px solid #FFD700;
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .envelope-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #FFD700, transparent);
+  }
+  
+  /* Lantern decoration */
+  .lantern {
+    background: linear-gradient(180deg, #FF4500 0%, #DC143C 50%, #8B0000 100%);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    box-shadow: 
+      0 0 20px rgba(255, 69, 0, 0.5),
+      inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Cherry blossom decoration */
+  .cherry-blossom {
+    color: #FFB6C1;
+    text-shadow: 0 0 10px rgba(255, 182, 193, 0.5);
+  }
+  
+  /* Gold coin style */
+  .gold-coin {
+    background: radial-gradient(circle at 30% 30%, #FFE55C, #FFD700 50%, #DAA520 100%);
+    border: 2px solid #B8860B;
+    box-shadow: 
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.4);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.animate-sway {
+  animation: sway 4s ease-in-out infinite;
+}
+
+/* Falling cherry blossoms animation */
+@keyframes fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0.3;
+  }
+}
+
+.animate-fall {
+  animation: fall linear infinite;
+}
+
+/* Custom scrollbar with Tết theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #5C0000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FFE55C 0%, #FFD700 100%);
+}
