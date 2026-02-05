@@ -1,0 +1,45 @@
+{
+  "name": "lucky-draw",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "deploy:saigon": "hardhat run scripts/deploy.ts --network saigon",
+    "deploy:token:sepolia": "hardhat run scripts/deploy-test-token.ts --network sepolia",
+    "create-draw:sepolia": "hardhat run scripts/create-draw.ts --network sepolia",
+    "setup-tiers:sepolia": "hardhat run scripts/setup-tiers.ts --network sepolia",
+    "set-default-prize:sepolia": "hardhat run scripts/set-default-prize.ts --network sepolia",
+    "whitelist:sepolia": "hardhat run scripts/whitelist.ts --network sepolia",
+    "fund-draw:sepolia": "hardhat run scripts/fund-draw.ts --network sepolia",
+    "close-entries:sepolia": "hardhat run scripts/close-entries.ts --network sepolia",
+    "request-draw:sepolia": "hardhat run scripts/request-draw.ts --network sepolia",
+    "withdraw:sepolia": "hardhat run scripts/withdraw-leftover.ts --network sepolia",
+    "pause:sepolia": "hardhat run scripts/pause.ts --network sepolia",
+    "get-draw:sepolia": "hardhat run scripts/get-draw-info.ts --network sepolia",
+    "create-draw:saigon": "hardhat run scripts/create-draw.ts --network saigon",
+    "setup-tiers:saigon": "hardhat run scripts/setup-tiers.ts --network saigon",
+    "set-default-prize:saigon": "hardhat run scripts/set-default-prize.ts --network saigon",
+    "whitelist:saigon": "hardhat run scripts/whitelist.ts --network saigon",
+    "fund-draw:saigon": "hardhat run scripts/fund-draw.ts --network saigon",
+    "get-draw:saigon": "hardhat run scripts/get-draw-info.ts --network saigon",
+    "update-vrf-config:saigon": "hardhat run scripts/update-vrf-config.ts --network saigon"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@types/node": "^25.2.0",
+    "dotenv": "^17.2.3",
+    "hardhat": "^2.28.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^1.4.0",
+    "@openzeppelin/contracts": "^5.4.0"
+  }
+}
