@@ -3,10 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Header } from "@/components/Header";
-import { DrawCard } from "@/components/DrawCard";
-import { Card, Spinner } from "@/components/ui";
-import { useNextDrawId, useDraw } from "@/hooks/useDraw";
-import { Draw } from "@/types/draw";
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -54,63 +50,7 @@ function CherryBlossoms() {
   );
 }
 
-function DrawsList() {
-  const { data: nextDrawId, isLoading } = useNextDrawId();
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!nextDrawId || nextDrawId === 0n) {
-    return (
-      <Card className="text-center py-12 envelope-card">
-        <span className="text-6xl block mb-4">🧧</span>
-        <p className="text-[#FFD700] text-lg">No lucky money available yet</p>
-        <p className="text-[#FFB6C1] text-sm mt-2">Come back later to receive lucky money!</p>
-      </Card>
-    );
-  }
-
-  const drawIds = Array.from({ length: Number(nextDrawId) }, (_, i) => i);
-
-  return (
-    <motion.div
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-    >
-      {drawIds.map((id) => (
-        <motion.div key={id} variants={fadeInUp}>
-          <DrawCardWrapper drawId={id} />
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-}
-
-function DrawCardWrapper({ drawId }: { drawId: number }) {
-  const { data: draw, isLoading } = useDraw(BigInt(drawId));
-
-  if (isLoading || !draw) {
-    return (
-      <Card className="animate-pulse envelope-card">
-        <div className="h-6 bg-[#FFD700]/20 rounded w-1/3 mb-4" />
-        <div className="space-y-3">
-          <div className="h-4 bg-[#FFD700]/20 rounded w-full" />
-          <div className="h-4 bg-[#FFD700]/20 rounded w-2/3" />
-          <div className="h-4 bg-[#FFD700]/20 rounded w-1/2" />
-        </div>
-      </Card>
-    );
-  }
-
-  return <DrawCard drawId={drawId} draw={draw as Draw} />;
-}
 
 
 
@@ -157,33 +97,44 @@ export default function Home() {
             </p>
           </motion.div>
 
-          {/* Animated red envelope preview */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative w-64 h-64 mx-auto mb-12"
-          >
+          {/* Animated red envelope preview - Click to enter draw */}
+          <Link href="/draw/0">
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: "conic-gradient(from 0deg, #FFD700, #DC143C, #FF8C00, #FFE55C, #B22222, #FFA500, #DAA520, #CD5C5C, #FFD700)",
-                opacity: 0.3,
-                filter: "blur(40px)",
-              }}
-            />
-            <div className="absolute inset-8 rounded-full bg-gradient-to-b from-[#DC143C] to-[#8B0000] flex items-center justify-center border-4 border-[#FFD700]">
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="relative w-64 h-64 mx-auto mb-12 cursor-pointer group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="text-5xl"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-0 rounded-full group-hover:opacity-50 transition-opacity"
+                style={{
+                  background: "conic-gradient(from 0deg, #FFD700, #DC143C, #FF8C00, #FFE55C, #B22222, #FFA500, #DAA520, #CD5C5C, #FFD700)",
+                  opacity: 0.3,
+                  filter: "blur(40px)",
+                }}
+              />
+              <div className="absolute inset-8 rounded-full bg-gradient-to-b from-[#DC143C] to-[#8B0000] flex items-center justify-center border-4 border-[#FFD700] group-hover:border-[#FFE55C] group-hover:shadow-[0_0_30px_rgba(255,215,0,0.6)] transition-all duration-300">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="text-5xl group-hover:text-6xl transition-all duration-300 group-hover:drop-shadow-[0_0_10px_rgba(255,215,0,0.8)]"
+                >
+                  福
+                </motion.div>
+              </div>
+              {/* Hover hint */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[#FFD700] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               >
-                福
+                Click to Enter
               </motion.div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </Link>
 
           {/* Stats */}
           <motion.div
@@ -210,31 +161,7 @@ export default function Home() {
 
 
 
-      {/* Active Draws */}
-      <section className="py-16 px-4 relative z-10">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-center justify-between mb-8"
-          >
-            <div>
-              <h2 className="text-3xl font-bold text-[#FFD700] text-glow-gold flex items-center gap-3">
-                🧧 Active Draws
-              </h2>
-              <p className="text-[#FFB6C1] mt-1">Join to have a chance to receive lucky money</p>
-            </div>
-            <Link
-              href="/admin"
-              className="text-sm text-[#FFD700] hover:text-[#FFE55C] hidden md:block border border-[#FFD700]/30 px-4 py-2 rounded-lg hover:bg-[#FFD700]/10 transition-all"
-            >
-              Manage →
-            </Link>
-          </motion.div>
-          <DrawsList />
-        </div>
-      </section>
+
 
       {/* How it works */}
       <section className="py-16 px-4 bg-gradient-to-b from-[#5C0000] to-[#3D0000] relative z-10">
