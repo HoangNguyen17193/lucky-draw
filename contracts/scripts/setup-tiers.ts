@@ -74,24 +74,12 @@ async function main() {
 
   console.log("Tiers configured successfully!");
 
-  // Display expected payouts if there are entrants
+  // Display current draw info
   const drawInfo = await luckyDrawManager.getDraw(drawId);
-  if (drawInfo.entrantCount > 0n) {
-    const [expectedTotal, expectedPerTier, expectedDefault] = await luckyDrawManager.getExpectedPayout(drawId);
-    
-    console.log("\nExpected payouts (based on", drawInfo.entrantCount.toString(), "entrants):");
-    for (let i = 0; i < tiers.length; i++) {
-      const expectedWinners = (Number(drawInfo.entrantCount) * Number(tiers[i].winProbability)) / 10000;
-      console.log(`  Tier ${i + 1}: ~${expectedWinners.toFixed(1)} winners = ${ethers.formatUnits(expectedPerTier[i], decimals)} USDC`);
-    }
-    console.log(`  Default: ~${(Number(drawInfo.entrantCount) * remainingProbability / 100).toFixed(1)} recipients = ${ethers.formatUnits(expectedDefault, decimals)} USDC`);
-    console.log(`  Total expected: ${ethers.formatUnits(expectedTotal, decimals)} USDC`);
-  }
-
-  // Display max payout (worst case)
-  const maxPayout = await luckyDrawManager.getMaxPayout(drawId);
-  console.log("\nMax possible payout (worst case):", ethers.formatUnits(maxPayout, decimals), "USDC");
-  console.log("Current funding:", ethers.formatUnits(drawInfo.fundedAmount, decimals), "USDC");
+  console.log("\nDraw info:");
+  console.log("  Entrants:", drawInfo.entrantCount.toString());
+  console.log("  Current funding:", ethers.formatUnits(drawInfo.fundedAmount, decimals), "USDC");
+  console.log("  Default prize:", ethers.formatUnits(drawInfo.defaultPrize, decimals), "USDC");
 }
 
 main()
