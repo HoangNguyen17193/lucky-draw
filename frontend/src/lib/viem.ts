@@ -1,7 +1,7 @@
 import { createPublicClient, http, defineChain } from "viem";
 
 export const roninSaigon = defineChain({
-  id: 2021,
+  id: 202601,
   name: "Ronin Saigon Testnet",
   nativeCurrency: {
     decimals: 18,

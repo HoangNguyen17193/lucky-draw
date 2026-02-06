@@ -27,7 +27,7 @@ const config: HardhatUserConfig = {
     saigon: {
       url: SAIGON_RPC_URL,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
-      chainId: 2021,
+      chainId: 202601,
     },
   },
   etherscan: {
