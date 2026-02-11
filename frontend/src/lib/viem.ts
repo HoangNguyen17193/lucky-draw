@@ -1,8 +1,8 @@
 import { createPublicClient, http, defineChain } from "viem";
 
-export const roninSaigon = defineChain({
-  id: 202601,
-  name: "Ronin Saigon Testnet",
+export const roninMainnet = defineChain({
+  id: 2020,
+  name: "Ronin",
   nativeCurrency: {
     decimals: 18,
     name: "RON",
@@ -10,21 +10,21 @@ export const roninSaigon = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ["https://saigon-testnet.roninchain.com/rpc"],
+      http: ["https://api.roninchain.com/rpc"],
     },
   },
   blockExplorers: {
     default: {
-      name: "Saigon Explorer",
-      url: "https://saigon-app.roninchain.com",
+      name: "Ronin Explorer",
+      url: "https://app.roninchain.com",
     },
   },
-  testnet: true,
+  testnet: false,
 });
 
 export const publicClient = createPublicClient({
-  chain: roninSaigon,
+  chain: roninMainnet,
   transport: http(),
 });
 
-export const CHAIN = roninSaigon;
+export const CHAIN = roninMainnet;

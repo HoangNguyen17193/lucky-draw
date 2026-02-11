@@ -1,12 +1,12 @@
 import { ethers, run, network } from "hardhat";
 
-type SupportedNetwork = "sepolia" | "saigon";
+type SupportedNetwork = "sepolia" | "saigon" | "ronin";
 
 type VrfConfig = {
   label: string;
   coordinator: string;
   keyHash: string;
-  subscriptionEnvKey: "VRF_SUBSCRIPTION_ID" | "SAIGON_VRF_SUBSCRIPTION_ID";
+  subscriptionEnvKey: "VRF_SUBSCRIPTION_ID" | "SAIGON_VRF_SUBSCRIPTION_ID" | "RONIN_VRF_SUBSCRIPTION_ID";
   nativePayment?: boolean;
   vrfPortalUrl?: (subscriptionId: string) => string;
 };
@@ -26,6 +26,13 @@ const NETWORK_CONFIG: Record<SupportedNetwork, VrfConfig> = {
     keyHash: "0x0a79a60cc054d8da06a5050a1d07f0fec08088ca64192cf67477f8cc3e549f71",
     subscriptionEnvKey: "SAIGON_VRF_SUBSCRIPTION_ID",
     nativePayment: false,
+  },
+  ronin: {
+    label: "Ronin Mainnet",
+    coordinator: "0xa18FD3db9B869AD2A8c55267e0D54dbf6ECEbEda",
+    keyHash: "0x1aefc70f3533a251306d6b85a6b336ba0ae2e384226274b236f42c3d5366dbbd",
+    subscriptionEnvKey: "RONIN_VRF_SUBSCRIPTION_ID",
+    nativePayment: true,
   },
 };
 

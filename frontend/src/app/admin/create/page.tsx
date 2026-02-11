@@ -8,10 +8,10 @@ import { ConnectButton } from "@/components/ConnectButton";
 import { useContractWrite } from "@/hooks/useContract";
 import { useContractOwner } from "@/hooks/useDraw";
 import { getContractAddress } from "@/lib/contracts/addresses";
-import { roninSaigon } from "@/lib/viem";
+import { roninMainnet } from "@/lib/viem";
 import { parseUnits } from "viem";
 
-const USDC_ADDRESS = getContractAddress(roninSaigon.id, "usdc") as `0x${string}`;
+const USDC_ADDRESS = getContractAddress(roninMainnet.id, "usdc") as `0x${string}`;
 
 interface TierInput {
   prizeAmount: string;
@@ -209,7 +209,7 @@ export default function CreateDrawPage() {
                   placeholder="0x..."
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Default: USDC on Ronin Saigon
+                  Default: USDC on Ronin
                 </p>
               </div>
 

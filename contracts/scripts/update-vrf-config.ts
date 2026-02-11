@@ -1,11 +1,11 @@
 import { ethers, network } from "hardhat";
 
-type SupportedNetwork = "sepolia" | "saigon";
+type SupportedNetwork = "sepolia" | "saigon" | "ronin";
 
 type VrfNetworkConfig = {
   label: string;
   keyHash: string;
-  subscriptionEnvKey: "VRF_SUBSCRIPTION_ID" | "SAIGON_VRF_SUBSCRIPTION_ID";
+  subscriptionEnvKey: "VRF_SUBSCRIPTION_ID" | "SAIGON_VRF_SUBSCRIPTION_ID" | "RONIN_VRF_SUBSCRIPTION_ID";
 };
 
 const NETWORK_CONFIG: Record<SupportedNetwork, VrfNetworkConfig> = {
@@ -18,6 +18,11 @@ const NETWORK_CONFIG: Record<SupportedNetwork, VrfNetworkConfig> = {
     label: "Ronin Saigon",
     keyHash: "0x0a79a60cc054d8da06a5050a1d07f0fec08088ca64192cf67477f8cc3e549f71",
     subscriptionEnvKey: "SAIGON_VRF_SUBSCRIPTION_ID",
+  },
+  ronin: {
+    label: "Ronin Mainnet",
+    keyHash: "0x1aefc70f3533a251306d6b85a6b336ba0ae2e384226274b236f42c3d5366dbbd",
+    subscriptionEnvKey: "RONIN_VRF_SUBSCRIPTION_ID",
   },
 };
 

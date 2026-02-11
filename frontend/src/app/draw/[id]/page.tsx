@@ -73,7 +73,7 @@ export default function DrawPage() {
         description: `Transaction: ${hash.slice(0, 10)}...`,
         action: {
           label: "View",
-          onClick: () => window.open(`https://saigon-app.roninchain.com/tx/${hash}`, "_blank"),
+          onClick: () => window.open(`https://app.roninchain.com/tx/${hash}`, "_blank"),
         },
       });
 

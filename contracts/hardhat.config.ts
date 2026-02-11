@@ -5,6 +5,7 @@ import "dotenv/config";
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || "";
 const SAIGON_RPC_URL = process.env.SAIGON_RPC_URL || "";
+const RONIN_RPC_URL = process.env.RONIN_RPC_URL || "https://api.roninchain.com/rpc";
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
 
 const config: HardhatUserConfig = {
@@ -28,6 +29,11 @@ const config: HardhatUserConfig = {
       url: SAIGON_RPC_URL,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
       chainId: 202601,
+    },
+    ronin: {
+      url: RONIN_RPC_URL,
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      chainId: 2020,
     },
   },
   etherscan: {

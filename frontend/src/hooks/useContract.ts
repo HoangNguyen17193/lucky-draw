@@ -2,12 +2,12 @@
 
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { createWalletClient, custom } from "viem";
-import { roninSaigon } from "@/lib/viem";
+import { roninMainnet } from "@/lib/viem";
 import { LUCKY_DRAW_MANAGER_ABI, ERC20_ABI } from "@/lib/contracts/abi";
 import { getContractAddress } from "@/lib/contracts/addresses";
 import { useCallback } from "react";
 
-const contractAddress = getContractAddress(roninSaigon.id, "luckyDrawManager")!;
+const contractAddress = getContractAddress(roninMainnet.id, "luckyDrawManager")!;
 
 export function useContractWrite() {
   const { authenticated } = usePrivy();
@@ -19,11 +19,11 @@ export function useContractWrite() {
     }
 
     const wallet = wallets[0];
-    await wallet.switchChain(roninSaigon.id);
+    await wallet.switchChain(roninMainnet.id);
     const provider = await wallet.getEthereumProvider();
 
     return createWalletClient({
-      chain: roninSaigon,
+      chain: roninMainnet,
       transport: custom(provider),
       account: wallet.address as `0x${string}`,
     });

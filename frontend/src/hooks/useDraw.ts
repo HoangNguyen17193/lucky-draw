@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { publicClient, roninSaigon } from "@/lib/viem";
+import { publicClient, roninMainnet } from "@/lib/viem";
 import { LUCKY_DRAW_MANAGER_ABI } from "@/lib/contracts/abi";
 import { getContractAddress } from "@/lib/contracts/addresses";
 import { Draw, DrawStatus, Tier, UserResult } from "@/types/draw";
 
-const contractAddress = getContractAddress(roninSaigon.id, "luckyDrawManager")!;
+const contractAddress = getContractAddress(roninMainnet.id, "luckyDrawManager")!;
 
 export function useDraw(drawId: bigint) {
   return useQuery({

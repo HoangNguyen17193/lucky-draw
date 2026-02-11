@@ -1,13 +1,13 @@
-import { roninSaigon } from "../viem";
+import { roninMainnet } from "../viem";
 
 export const CONTRACT_ADDRESSES = {
-  [roninSaigon.id]: {
-    luckyDrawManager: "0xa1844a4d7d7e965060682a12A104180bAeE13EA5" as `0x${string}`,
-    usdc: "0x067fbff8990c58ab90bae3c97241c5d736053f77" as `0x${string}`, // Ronin Saigon USDC
+  [roninMainnet.id]: {
+    luckyDrawManager: "0x77dD872aE0691FDBF550D31fEF5cD2bCe4dDD03B" as `0x${string}`,
+    usdc: "0x0B7007c13325C48911F73A2daD5FA5dCBf808aDc" as `0x${string}`, // Ronin Mainnet USDC
   },
 } as const;
 
-export const SUPPORTED_CHAIN_IDS = [roninSaigon.id] as const;
+export const SUPPORTED_CHAIN_IDS = [roninMainnet.id] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
 export function getContractAddress(

@@ -34,6 +34,10 @@ async function main() {
   
   const tiers = [
     { 
+      prizeAmount: ethers.parseUnits("50", decimals),  // 50 USDC
+      winProbability: 100n,  // 1% chance
+    },
+    { 
       prizeAmount: ethers.parseUnits("10", decimals),  // 10 USDC
       winProbability: 500n,  // 5% chance
     },
