@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { usePrivy } from "@privy-io/react-auth";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Users, Wallet, Settings } from "lucide-react";
+import { ArrowLeft, Info, Users, Wallet, Settings, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { TierList } from "@/components/TierList";
@@ -14,10 +14,11 @@ import {
   useDraw,
   useTiers,
   useContractOwner,
+  useWinners,
 } from "@/hooks/useDraw";
 import { useContractWrite } from "@/hooks/useContract";
 import { DrawStatus, Tier } from "@/types/draw";
-import { parseUnits } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { formatUSDC } from "@/lib/utils";
 
 export default function AdminDrawPage() {
@@ -28,6 +29,7 @@ export default function AdminDrawPage() {
   const { data: draw, isLoading: drawLoading, refetch: refetchDraw } = useDraw(drawId);
   const { data: tiers } = useTiers(drawId, draw?.tierCount ?? 0n);
   const { data: owner } = useContractOwner();
+  const { data: winners, isLoading: winnersLoading } = useWinners(drawId, draw?.entrantCount ?? 0n);
 
   const {
     setWhitelistBatch,
@@ -38,7 +40,7 @@ export default function AdminDrawPage() {
     cancelDraw,
   } = useContractWrite();
 
-  const [activeTab, setActiveTab] = useState<"info" | "whitelist" | "fund" | "actions">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "winners" | "whitelist" | "fund" | "actions">("info");
   const [whitelistInput, setWhitelistInput] = useState("");
   const [fundAmount, setFundAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -164,6 +166,7 @@ export default function AdminDrawPage() {
 
   const tabs = [
     { id: "info" as const, label: "Info", icon: Info },
+    { id: "winners" as const, label: "Winners", icon: Trophy },
     { id: "whitelist" as const, label: "Whitelist", icon: Users },
     { id: "fund" as const, label: "Fund", icon: Wallet },
     { id: "actions" as const, label: "Actions", icon: Settings },
@@ -265,6 +268,80 @@ export default function AdminDrawPage() {
                   />
                 )}
               </>
+            )}
+
+            {/* Winners Tab */}
+            {activeTab === "winners" && (
+              <Card>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-white">
+                    Winners ({winners?.length ?? 0})
+                  </h3>
+                  {winners && winners.length > 0 && (
+                    <span className="text-sm text-gray-400">
+                      Total: {formatUSDC(winners.reduce((sum, w) => sum + w.prizeAmount, 0n))}
+                    </span>
+                  )}
+                </div>
+                {winnersLoading ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin w-6 h-6 border-2 border-[#FFD700] border-t-transparent rounded-full mx-auto mb-3" />
+                    <p className="text-gray-400 text-sm">Loading winners...</p>
+                  </div>
+                ) : !winners || winners.length === 0 ? (
+                  <p className="text-gray-400 text-sm py-8 text-center">No winners yet</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase">#</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase">Address</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-400 uppercase">Tier</th>
+                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-400 uppercase">Prize</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {winners.map((winner, i) => {
+                          const tierLabel =
+                            winner.tierIndex === BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+                              ? "Default"
+                              : winner.tierIndex === 0n
+                              ? "Jackpot"
+                              : `Tier ${Number(winner.tierIndex) + 1}`;
+                          const tierColor =
+                            winner.tierIndex === 0n
+                              ? "text-[#FFD700]"
+                              : winner.tierIndex === BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+                              ? "text-gray-400"
+                              : "text-white";
+                          return (
+                            <tr key={i} className="border-b border-white/5 hover:bg-white/5">
+                              <td className="px-3 py-2.5 text-sm text-gray-500">{i + 1}</td>
+                              <td className="px-3 py-2.5">
+                                <a
+                                  href={`https://app.roninchain.com/address/${winner.address}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-mono text-blue-400 hover:underline"
+                                >
+                                  {winner.address.slice(0, 6)}...{winner.address.slice(-4)}
+                                </a>
+                              </td>
+                              <td className={`px-3 py-2.5 text-sm font-medium ${tierColor}`}>
+                                {tierLabel}
+                              </td>
+                              <td className="px-3 py-2.5 text-sm text-white font-bold text-right">
+                                {formatUnits(winner.prizeAmount, 6)} USDC
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
             )}
 
             {/* Whitelist Tab */}

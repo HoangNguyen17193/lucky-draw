@@ -234,6 +234,22 @@ export function SpinWheel({
     };
   }, []);
 
+  const findTargetSegment = useCallback((tierIdx: number | null, prizeAmount?: bigint): number => {
+    const amountStr = prizeAmount !== undefined ? formatUnits(prizeAmount, decimals) : undefined;
+
+    if (tierIdx === null) {
+      // Default prize -- match by tierIndex null and amount
+      const idx = amountStr
+        ? segments.findIndex((s) => s.tierIndex === null && s.amount === amountStr)
+        : segments.findIndex((s) => s.tierIndex === null);
+      return idx !== -1 ? idx : segments.findIndex((s) => s.tierIndex === null);
+    }
+
+    // Tier prize -- match by tierIndex
+    const idx = segments.findIndex((s) => s.tierIndex === tierIdx);
+    return idx !== -1 ? idx : 0;
+  }, [segments, decimals]);
+
   // Handle returning users who already have a result - show result directly
   useEffect(() => {
     if (hasInitializedRef.current) return;
@@ -243,26 +259,17 @@ export function SpinWheel({
       hasInitializedRef.current = true;
       
       const sliceAngle = 360 / segments.length;
-      let targetSegmentIndex: number;
-
-      if (userTierIndex === null) {
-        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === null);
-      } else {
-        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === userTierIndex);
-      }
-
-      if (targetSegmentIndex === -1) targetSegmentIndex = 0;
+      const targetSegmentIndex = findTargetSegment(userTierIndex, userPrizeAmount);
 
       // Set rotation to land on the correct segment
       const targetAngle = 360 - (targetSegmentIndex * sliceAngle + sliceAngle / 2);
       setRotation(targetAngle);
       setHasSpun(true);
 
-      const winningSegment = segments[targetSegmentIndex];
       const actualAmount = formatUnits(userPrizeAmount, decimals);
-      setResult({ label: winningSegment.label, amount: actualAmount });
+      setResult({ label: `${actualAmount} ${symbol}`, amount: actualAmount });
     }
-  }, [canSpin, userTierIndex, userPrizeAmount, hasSpun, segments, decimals]);
+  }, [canSpin, userTierIndex, userPrizeAmount, hasSpun, segments, decimals, symbol, findTargetSegment]);
 
   // When result arrives (userTierIndex changes from -1 to actual value), stop and land on prize
   useEffect(() => {
@@ -293,15 +300,7 @@ export function SpinWheel({
       setIsSpinning(true);
 
       const sliceAngle = 360 / segments.length;
-      let targetSegmentIndex: number;
-
-      if (userTierIndex === null) {
-        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === null);
-      } else {
-        targetSegmentIndex = segments.findIndex((s) => s.tierIndex === userTierIndex);
-      }
-
-      if (targetSegmentIndex === -1) targetSegmentIndex = 0;
+      const targetSegmentIndex = findTargetSegment(userTierIndex, userPrizeAmount);
 
       // Calculate final position
       const currentRotationMod = rotation % 360;
@@ -340,12 +339,10 @@ export function SpinWheel({
           setIsSpinning(false);
           setHasSpun(true);
 
-          const winningSegment = segments[targetSegmentIndex];
-          // Use actual prize amount from contract if available, otherwise use segment amount
           const actualAmount = userPrizeAmount !== undefined 
             ? formatUnits(userPrizeAmount, decimals)
-            : winningSegment.amount;
-          setResult({ label: winningSegment.label, amount: actualAmount });
+            : segments[targetSegmentIndex].amount;
+          setResult({ label: `${actualAmount} ${symbol}`, amount: actualAmount });
 
           // Play win celebration sound
           try {
@@ -380,13 +377,13 @@ export function SpinWheel({
           };
           frame();
 
-          onSpinComplete?.(winningSegment.tierIndex, winningSegment.amount);
+          onSpinComplete?.(segments[targetSegmentIndex].tierIndex, actualAmount);
         }
       };
 
       requestAnimationFrame(animateFinal);
     }
-  }, [userTierIndex, isWaitingSpinning, hasSpun, segments, rotation, onSpinComplete]);
+  }, [userTierIndex, isWaitingSpinning, hasSpun, segments, rotation, onSpinComplete, findTargetSegment, userPrizeAmount, decimals, symbol]);
 
   const spinWheel = useCallback(() => {
     if (isSpinning || !canSpin || hasSpun) return;
@@ -394,15 +391,7 @@ export function SpinWheel({
     setIsSpinning(true);
 
     const sliceAngle = 360 / segments.length;
-    let targetSegmentIndex: number;
-
-    if (userTierIndex === null) {
-      targetSegmentIndex = segments.findIndex((s) => s.tierIndex === null);
-    } else {
-      targetSegmentIndex = segments.findIndex((s) => s.tierIndex === userTierIndex);
-    }
-
-    if (targetSegmentIndex === -1) targetSegmentIndex = 0;
+    const targetSegmentIndex = findTargetSegment(userTierIndex, userPrizeAmount);
 
     const spins = 5 + Math.random() * 3;
     const targetAngle = 360 - (targetSegmentIndex * sliceAngle + sliceAngle / 2);
@@ -428,8 +417,10 @@ export function SpinWheel({
         setIsSpinning(false);
         setHasSpun(true);
 
-        const winningSegment = segments[targetSegmentIndex];
-        setResult({ label: winningSegment.label, amount: winningSegment.amount });
+        const actualAmount = userPrizeAmount !== undefined
+          ? formatUnits(userPrizeAmount, decimals)
+          : segments[targetSegmentIndex].amount;
+        setResult({ label: `${actualAmount} ${symbol}`, amount: actualAmount });
 
         // Tết celebration confetti - Red and Gold
         const duration = 3000;
@@ -457,12 +448,12 @@ export function SpinWheel({
         };
         frame();
 
-        onSpinComplete?.(winningSegment.tierIndex, winningSegment.amount);
+        onSpinComplete?.(segments[targetSegmentIndex].tierIndex, actualAmount);
       }
     };
 
     requestAnimationFrame(animate);
-  }, [segments, userTierIndex, isSpinning, canSpin, hasSpun, onSpinComplete]);
+  }, [segments, userTierIndex, isSpinning, canSpin, hasSpun, onSpinComplete, findTargetSegment, userPrizeAmount, decimals, symbol]);
 
   return (
     <div className="flex flex-col items-center">
