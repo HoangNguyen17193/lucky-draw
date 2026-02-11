@@ -41,6 +41,10 @@ const SEGMENT_COLORS = [
   { color: "#FFA500", gradient: "linear-gradient(135deg, #FFA500 0%, #FF8C00 100%)" }, // Orange
   { color: "#DAA520", gradient: "linear-gradient(135deg, #DAA520 0%, #B8860B 100%)" }, // Goldenrod
   { color: "#CD5C5C", gradient: "linear-gradient(135deg, #CD5C5C 0%, #DC143C 100%)" }, // Indian Red
+  { color: "#E8B800", gradient: "linear-gradient(135deg, #E8B800 0%, #CC9900 100%)" }, // Deep Gold
+  { color: "#CC0033", gradient: "linear-gradient(135deg, #CC0033 0%, #990022 100%)" }, // Ruby Red
+  { color: "#FF7733", gradient: "linear-gradient(135deg, #FF7733 0%, #E65C00 100%)" }, // Burnt Orange
+  { color: "#FFD54F", gradient: "linear-gradient(135deg, #FFD54F 0%, #FFCA28 100%)" }, // Amber Gold
 ];
 
 export function SpinWheel({
@@ -70,7 +74,7 @@ export function SpinWheel({
 
   const segments = useMemo((): WheelSegment[] => {
     const segs: WheelSegment[] = [];
-    const totalSegments = 8;
+    const totalSegments = 12;
     let segmentIndex = 0;
 
     tiers.forEach((tier, tierIdx) => {
@@ -148,7 +152,7 @@ export function SpinWheel({
       ctx.rotate(startAngle + sliceAngle / 2);
       ctx.textAlign = "right";
       ctx.fillStyle = "#000";
-      ctx.font = "bold 14px sans-serif";
+      ctx.font = "bold 12px sans-serif";
       ctx.shadowColor = "rgba(255,255,255,0.5)";
       ctx.shadowBlur = 2;
       ctx.fillText(seg.label, radius - 20, 5);
