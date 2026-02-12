@@ -73,15 +73,37 @@ export function SpinWheel({
   const hasInitializedRef = useRef(false);
 
   const segments = useMemo((): WheelSegment[] => {
-    const segs: WheelSegment[] = [];
     const totalSegments = 12;
+
+    // Calculate raw segment counts per tier, ensuring at least 1 each
+    const rawCounts = tiers.map((tier) => {
+      const probability = Number(tier.winProbability);
+      return Math.max(1, Math.round((probability / 10000) * totalSegments));
+    });
+
+    // If tiers over-fill, scale down proportionally while keeping at least 1 each
+    let tierTotal = rawCounts.reduce((a, b) => a + b, 0);
+    if (tierTotal > totalSegments) {
+      const scale = totalSegments / tierTotal;
+      rawCounts.forEach((_, i) => {
+        rawCounts[i] = Math.max(1, Math.floor(rawCounts[i] * scale));
+      });
+      tierTotal = rawCounts.reduce((a, b) => a + b, 0);
+      // If still over, trim the largest counts
+      while (tierTotal > totalSegments) {
+        const maxIdx = rawCounts.indexOf(Math.max(...rawCounts));
+        if (rawCounts[maxIdx] > 1) {
+          rawCounts[maxIdx]--;
+          tierTotal--;
+        } else break;
+      }
+    }
+
+    const segs: WheelSegment[] = [];
     let segmentIndex = 0;
 
     tiers.forEach((tier, tierIdx) => {
-      const probability = Number(tier.winProbability);
-      const segmentCount = Math.max(1, Math.round((probability / 10000) * totalSegments));
-
-      for (let i = 0; i < segmentCount && segmentIndex < totalSegments; i++) {
+      for (let i = 0; i < rawCounts[tierIdx] && segmentIndex < totalSegments; i++) {
         const colorSet = SEGMENT_COLORS[segmentIndex % SEGMENT_COLORS.length];
         segs.push({
           label: tierIdx === 0 ? "JACKPOT!" : `${formatUnits(tier.prizeAmount, decimals)} ${symbol}`,
@@ -237,17 +259,30 @@ export function SpinWheel({
   const findTargetSegment = useCallback((tierIdx: number | null, prizeAmount?: bigint): number => {
     const amountStr = prizeAmount !== undefined ? formatUnits(prizeAmount, decimals) : undefined;
 
+    // Collect all candidate segment indices that match
+    let candidates: number[] = [];
+
     if (tierIdx === null) {
       // Default prize -- match by tierIndex null and amount
-      const idx = amountStr
-        ? segments.findIndex((s) => s.tierIndex === null && s.amount === amountStr)
-        : segments.findIndex((s) => s.tierIndex === null);
-      return idx !== -1 ? idx : segments.findIndex((s) => s.tierIndex === null);
+      candidates = segments
+        .map((s, i) => (s.tierIndex === null && (!amountStr || s.amount === amountStr) ? i : -1))
+        .filter((i) => i !== -1);
+      if (candidates.length === 0) {
+        candidates = segments.map((s, i) => (s.tierIndex === null ? i : -1)).filter((i) => i !== -1);
+      }
+    } else {
+      // Tier prize -- match by tierIndex and optionally amount
+      candidates = segments
+        .map((s, i) => (s.tierIndex === tierIdx && (!amountStr || s.amount === amountStr) ? i : -1))
+        .filter((i) => i !== -1);
+      if (candidates.length === 0) {
+        candidates = segments.map((s, i) => (s.tierIndex === tierIdx ? i : -1)).filter((i) => i !== -1);
+      }
     }
 
-    // Tier prize -- match by tierIndex
-    const idx = segments.findIndex((s) => s.tierIndex === tierIdx);
-    return idx !== -1 ? idx : 0;
+    if (candidates.length === 0) return 0;
+    // Randomly pick among matching segments so the wheel doesn't always land on the same one
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }, [segments, decimals]);
 
   // Handle returning users who already have a result - show result directly
